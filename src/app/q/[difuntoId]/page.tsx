@@ -15,10 +15,14 @@ async function getDifunto(difuntoId: string) {
       apellido: true,
       fotoPerfilUrl: true,
       funerariaId: true,
+      requiereModeracion: true,
       funeraria: {
         select: {
+          id: true,     // <-- Añadido aquí
+          slug: true,   // <-- Añadido aquí
           nombre: true,
           logoUrl: true,
+          requiereModeracion: true,
         },
       },
     },

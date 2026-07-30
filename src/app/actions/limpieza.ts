@@ -2,7 +2,7 @@
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
-import { EstadoCondolencia } from '@prisma/client';
+import { EstadoCondolencia, RolUsuario } from '@prisma/client'; // <-- Añadido RolUsuario aquí
 // Importa tu helper de autenticación (ej: NextAuth, SupabaseAuth, Clerk, etc.)
 import { obtenerSesionServidor } from '@/lib/auth'; 
 
@@ -11,7 +11,8 @@ export async function purgarCondolenciasRechazadas() {
     // 1. Validar autenticación y rol de SuperAdmin
     const session = await obtenerSesionServidor();
 
-    if (!session || session.user?.rol !== 'SUPER_ADMIN') {
+    // Usamos RolUsuario.SUPER_ADMIN en lugar de un string plano
+    if (!session || session.user?.rol !== RolUsuario.SUPERADMIN) {
       return {
         success: false,
         error: 'No tienes permisos de SuperAdministrador para realizar esta acción.',

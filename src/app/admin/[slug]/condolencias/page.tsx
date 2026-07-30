@@ -17,7 +17,7 @@ export default async function PaginaModeracion() {
   const condolencias = await prisma.condolencia.findMany({
     orderBy: [
       { estado: 'asc' },
-      { createdAt: 'desc' },
+      { creadoEn: 'desc' },
     ],
     include: {
       difunto: {

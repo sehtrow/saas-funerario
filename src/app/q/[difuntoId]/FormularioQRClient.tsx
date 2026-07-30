@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { compressImage } from "@/lib/utils/image-compressor";
 import { Camera, Send, CheckCircle2, Heart, Loader2, Sparkles, X } from "lucide-react";
-import type { DifuntoPublico } from "./page";
+import type { DifuntoPublico } from "@/types";
 
 export default function FormularioQRClient({ difunto }: { difunto: DifuntoPublico }) {
   const [nombreAutor, setNombreAutor] = useState("");
@@ -114,7 +114,7 @@ export default function FormularioQRClient({ difunto }: { difunto: DifuntoPublic
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          funerariaId: difunto.funerariaId,
+          funerariaId: difunto.funeraria.id,
           difuntoId: difunto.id,
           nombreAutor: nombreAutor.trim(),
           parentesco: parentesco.trim(),

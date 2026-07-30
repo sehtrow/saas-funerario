@@ -9,9 +9,9 @@ import {
 
 interface CondolenciaConDifunto {
   id: string;
-  autor: string;
+  nombreAutor: string;
   mensaje: string;
-  relacion?: string | null;
+  parentesco?: string | null;
   estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
   creadoEn: Date;
   difunto: {
@@ -131,10 +131,10 @@ export default function TablaCondolencias({
               >
                 <div className="space-y-1.5 max-w-2xl">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-slate-900">{c.autor}</span>
-                    {c.relacion && (
+                    <span className="font-semibold text-slate-900">{c.nombreAutor}</span>
+                    {c.parentesco && (
                       <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-                        {c.relacion}
+                        {c.parentesco}
                       </span>
                     )}
                     <span className="text-slate-300">•</span>

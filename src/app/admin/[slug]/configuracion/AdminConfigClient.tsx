@@ -11,7 +11,7 @@ interface FunerariaConfig {
   slug: string;
   tiempoRotacionTv: number;
   mensajeInstitucional: string | null;
-  moderacionPorDefecto: boolean;
+  requiereModeracion: boolean;
   logoUrl: string | null; // <--- Añadido
 }
 
@@ -30,7 +30,7 @@ export default function AdminConfigClient({ slug, funeraria }: AdminConfigClient
     nombre: funeraria.nombre,
     tiempoRotacionTv: funeraria.tiempoRotacionTv,
     mensajeInstitucional: funeraria.mensajeInstitucional || "",
-    moderacionPorDefecto: funeraria.moderacionPorDefecto,
+    requiereModeracion: funeraria.requiereModeracion,
     logoUrl: funeraria.logoUrl || "",
   });
 
@@ -62,7 +62,7 @@ export default function AdminConfigClient({ slug, funeraria }: AdminConfigClient
       nombre: formData.nombre,
       tiempoRotacionTv: formData.tiempoRotacionTv,
       mensajeInstitucional: formData.mensajeInstitucional,
-      moderacionPorDefecto: formData.moderacionPorDefecto,
+      requiereModeracion: formData.requiereModeracion,
       logoUrl: formData.logoUrl,
     });
 
@@ -241,12 +241,12 @@ export default function AdminConfigClient({ slug, funeraria }: AdminConfigClient
             <div className="flex items-start gap-3 bg-slate-950/50 border border-slate-800/80 p-4 rounded-xl">
               <input
                 type="checkbox"
-                id="moderacionPorDefecto"
-                checked={formData.moderacionPorDefecto}
-                onChange={(e) => setFormData({ ...formData, moderacionPorDefecto: e.target.checked })}
+                id="requiereModeracion"
+                checked={formData.requiereModeracion}
+                onChange={(e) => setFormData({ ...formData, requiereModeracion: e.target.checked })}
                 className="mt-0.5 w-4 h-4 rounded border-slate-800 bg-slate-900 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer"
               />
-              <label htmlFor="moderacionPorDefecto" className="text-xs text-slate-300 cursor-pointer">
+              <label htmlFor="requiereModeracion" className="text-xs text-slate-300 cursor-pointer">
                 <span className="font-semibold block text-white text-sm">Activar moderación por defecto en nuevos servicios</span>
                 Al crear un nuevo difunto, la opción de requerir aprobación previa para las condolencias vendrá marcada por defecto.
               </label>

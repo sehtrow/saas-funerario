@@ -8,7 +8,7 @@ interface ActualizarConfiguracionParams {
   nombre: string;
   tiempoRotacionTv: number;
   mensajeInstitucional?: string;
-  moderacionPorDefecto: boolean;
+  requiereModeracion: boolean;
   logoUrl?: string;
 }
 
@@ -28,7 +28,7 @@ export async function actualizarConfiguracionAction(data: ActualizarConfiguracio
         nombre: data.nombre,
         tiempoRotacionTv: Number(data.tiempoRotacionTv),
         mensajeInstitucional: data.mensajeInstitucional || null,
-        moderacionPorDefecto: data.moderacionPorDefecto,
+        requiereModeracion: data.requiereModeracion,
         logoUrl: data.logoUrl || null,
       },
     });

@@ -1,6 +1,7 @@
+// src/app/[slug]/difuntos/[difuntoId]/page.tsx
 import { prisma } from '@/lib/db/prisma';
 import { notFound } from 'next/navigation';
-import FormularioCondolencia from './FormularioCondolencia';
+import FormularioCondolencia from './FormularioCondolencia'; // O la ruta correcta a tu componente
 
 interface PageProps {
   params: Promise<{
@@ -46,9 +47,9 @@ export default async function PaginaDifunto({ params }: PageProps) {
         {/* Tarjeta Principal del Difunto */}
         <div className="bg-white rounded-xl shadow-md overflow-hidden p-6 text-center md:text-left md:flex md:items-center md:gap-8">
           <div className="w-40 h-40 mx-auto md:mx-0 rounded-full overflow-hidden bg-slate-200 flex-shrink-0 border-4 border-slate-100 shadow-inner">
-            {difunto.fotoKeyR2 ? (
+            {difunto.fotoPerfilUrl ? (
               <img
-                src={difunto.fotoKeyR2}
+                src={difunto.fotoPerfilUrl}
                 alt={difunto.nombre}
                 className="w-full h-full object-cover"
               />
@@ -60,12 +61,12 @@ export default async function PaginaDifunto({ params }: PageProps) {
           </div>
 
           <div className="mt-4 md:mt-0 flex-1">
-            <h1 className="text-3xl font-serif text-slate-900 font-bold">{difunto.nombre}</h1>
+            <h1 className="text-3xl font-serif text-slate-900 font-bold">{difunto.nombre} {difunto.apellido}</h1>
             <p className="text-slate-500 mt-1">
               {difunto.fechaNacimiento
                 ? new Date(difunto.fechaNacimiento).toLocaleDateString('es-CL')
                 : ''}{' '}
-              - {new Date(difunto.fechaDefuncion).toLocaleDateString('es-CL')}
+              - {new Date(difunto.fechaFallecimiento).toLocaleDateString('es-CL')}
             </p>
 
             {difunto.biografia && (
@@ -93,7 +94,7 @@ export default async function PaginaDifunto({ params }: PageProps) {
           <h2 className="text-xl font-serif font-bold text-slate-900 mb-4">
             Dejar una Condolencia
           </h2>
-          <FormularioCondolencia difuntoId={difunto.id} slug={slug} />
+          <FormularioCondolencia difunto={difunto} slug={slug} />
         </div>
 
         {/* Lista de Condolencias Aprobadas */}
@@ -114,10 +115,10 @@ export default async function PaginaDifunto({ params }: PageProps) {
                   className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 space-y-2"
                 >
                   <div className="flex justify-between items-start">
-                    <span className="font-semibold text-slate-800">{c.autor}</span>
-                    {c.relacion && (
+                    <span className="font-semibold text-slate-800">{c.nombreAutor}</span>
+                    {c.parentesco && (
                       <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">
-                        {c.relacion}
+                        {c.parentesco}
                       </span>
                     )}
                   </div>

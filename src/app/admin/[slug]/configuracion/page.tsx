@@ -21,7 +21,7 @@ export default async function AdminConfigPage({ params }: PageProps) {
       slug: true,
       tiempoRotacionTv: true,
       mensajeInstitucional: true,
-      moderacionPorDefecto: true,
+      requiereModeracion: true,
       logoUrl: true,
     },
   });
