@@ -1,0 +1,125 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum RolUsuario {
+  SUPERADMIN
+  ADMIN_FUNERARIA
+}
+
+enum EstadoDifunto {
+  ACTIVO
+  CONSOLIDADO
+  ARCHIVADO
+}
+
+enum EstadoCondolencia {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
+enum TiempoRotacion {
+  CINCO_SEG     @map("5s")
+  DIEZ_SEG      @map("10s")
+  QUINCE_SEG    @map("15s")
+}
+
+model Funeraria {
+  id                    String        @id @default(uuid())
+  nombre                String
+  slug                  String        @unique
+  tiempoRotacionTv      Int      @default(8)       // Segundos por mensaje en pantalla TV
+  mensajeInstitucional  String?                    // Texto personalizado para el QR
+  moderacionPorDefecto  Boolean  @default(true)    // Moderación activa por defecto en nuevos servicios
+  logoUrl               String?
+  colorPrimario         String        @default("#111827")
+  activo                Boolean       @default(true)
+  creadoEn              DateTime      @default(now())
+  actualizadoEn         DateTime      @updatedAt
+
+  usuarios        Usuario[]
+  difuntos        Difunto[]
+
+  @@map("funerarias")
+}
+
+model Usuario {
+  id              String        @id @default(uuid())
+  funerariaId     String?       
+  email           String        @unique
+  passwordHash    String
+  nombre          String
+  rol             RolUsuario    @default(ADMIN_FUNERARIA)
+  activo          Boolean       @default(true)
+  creadoEn        DateTime      @default(now())
+  actualizadoEn   DateTime      @updatedAt
+
+  funeraria       Funeraria?    @relation(fields: [funerariaId], references: [id], onDelete: Cascade)
+
+  @@index([funerariaId])
+  @@map("usuarios")
+}
+
+model Difunto {
+  id                 String         @id @default(uuid())
+  funerariaId        String
+  nombre             String
+  apellido           String
+  fechaNacimiento    DateTime?
+  fechaFallecimiento DateTime
+  biografia          String?        @db.Text
+  fotoPerfilUrl      String?
+  estado             EstadoDifunto  @default(ACTIVO)
+  pdfAlbumUrl        String?        
+  requiereModeracion Boolean        @default(true) // <--- NUEVO: Control por servicio individual
+  creadoEn           DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt @default(now())
+
+  funeraria          Funeraria      @relation(fields: [funerariaId], references: [id], onDelete: Cascade)
+  condolencias       Condolencia[]
+  configPantalla     ConfiguracionPantalla?
+
+  @@index([funerariaId])
+  @@index([estado])
+  @@map("difuntos")
+}
+
+model Condolencia {
+  id            String            @id @default(uuid())
+  funerariaId   String            
+  difuntoId     String
+  nombreAutor   String
+  parentesco    String?           
+  mensaje       String            @db.Text
+  fotoUrl       String?           
+  fotoKeyR2     String?           
+  estado        EstadoCondolencia @default(APROBADO)
+  ipOrigen      String?           
+  creadoEn      DateTime          @default(now())
+
+  difunto       Difunto           @relation(fields: [difuntoId], references: [id], onDelete: Cascade)
+
+  @@index([difuntoId, estado])
+  @@index([funerariaId])
+  @@map("condolencias")
+}
+
+model ConfiguracionPantalla {
+  id              String         @id @default(uuid())
+  difuntoId       String         @unique
+  tiempoRotacion  TiempoRotacion @default(DIEZ_SEG)
+  mostrarFotos    Boolean        @default(true)
+  mensajeBienvenida String?      @default("En memoria de nuestro ser querido")
+  actualizadoEn   DateTime       @updatedAt
+
+  difunto         Difunto        @relation(fields: [difuntoId], references: [id], onDelete: Cascade)
+
+  @@map("configuraciones_pantalla")
+}
