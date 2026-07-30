@@ -1,5 +1,5 @@
 // src/app/[slug]/difuntos/[difuntoId]/FormularioCondolencia.tsx
-'import client'; // o 'use client' según corresponda
+'use client'; // o 'use client' según corresponda
 
 import { useState } from 'react';
 import { enviarCondolencia } from '@/app/actions/condolencias';
