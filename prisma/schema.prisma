@@ -101,7 +101,8 @@ model Condolencia {
   fotoUrl       String?           
   fotoKeyR2     String?           
   estado        EstadoCondolencia @default(APROBADO)
-  ipOrigen      String?           
+  ipOrigen      String?
+  pais          String?           
   creadoEn      DateTime          @default(now())
 
   difunto       Difunto           @relation(fields: [difuntoId], references: [id], onDelete: Cascade)

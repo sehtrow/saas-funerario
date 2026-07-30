@@ -4,7 +4,7 @@
 import { useState, useEffect, use } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Sparkles, Quote, Loader2 } from "lucide-react";
+import { Heart, Sparkles, Quote, Loader2, Globe2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
 interface LiveWallProps {
@@ -17,6 +17,7 @@ interface Condolencia {
   parentesco?: string | null;
   mensaje: string;
   creadoEn: string;
+  pais?: string | null; // <-- 1. Añadimos el país aquí
 }
 
 interface Difunto {
@@ -29,6 +30,16 @@ interface Difunto {
   };
 }
 
+// Función auxiliar para convertir el código de país (ej. "CL") en emoji de bandera (ej. 🇨🇱)
+function obtenerBanderaPais(codigo?: string | null) {
+  if (!codigo || codigo.length !== 2) return "🌐";
+  const upper = codigo.toUpperCase();
+  return String.fromCodePoint(
+    127397 + upper.charCodeAt(0),
+    127397 + upper.charCodeAt(1)
+  );
+}
+
 export default function LiveWallPage({ params }: LiveWallProps) {
   const resolvedParams = use(params);
   const difuntoId = resolvedParams.difuntoId;
@@ -39,11 +50,9 @@ export default function LiveWallPage({ params }: LiveWallProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [rotacionSegundos] = useState(8);
 
-  // URL absoluta para generar el código QR apuntando al formulario del móvil
   const hostUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const qrUrl = `${hostUrl}/q/${difuntoId}`;
 
-  // 1. Cargar datos del difunto y condolencias reales
   const fetchData = async () => {
     try {
       const res = await fetch(`/api/condolencias/${difuntoId}`);
@@ -59,14 +68,12 @@ export default function LiveWallPage({ params }: LiveWallProps) {
     }
   };
 
-  // 2. Carga inicial y polling periódico cada 10 segundos
   useEffect(() => {
     fetchData();
     const pollInterval = setInterval(fetchData, 10000);
     return () => clearInterval(pollInterval);
   }, [difuntoId]);
 
-  // 3. Rotación automática de tarjetas en pantalla
   useEffect(() => {
     if (condolencias.length === 0) return;
 
@@ -106,10 +113,8 @@ export default function LiveWallPage({ params }: LiveWallProps) {
       {/* ÁREA PRINCIPAL DIVIDIDA EN 2 COLUMNAS */}
       <main className="my-auto py-4 z-10 grid grid-cols-1 md:grid-cols-12 gap-8 items-center h-[calc(100vh-180px)]">
         
-        {/* COLUMNA IZQUIERDA: FOTO DEL DIFUNTO + CÓDIGO QR SIEMPRE VISIBLE */}
+        {/* COLUMNA IZQUIERDA: FOTO + QR */}
         <div className="md:col-span-4 lg:col-span-4 bg-slate-900/50 border border-slate-800/80 p-6 rounded-3xl backdrop-blur-xl flex flex-col items-center justify-center text-center h-full space-y-4">
-          
-          {/* FOTO DE PERFIL DEL DIFUNTO (ÚNICA IMAGEN) */}
           <div className="relative w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-2 border-amber-500/30 shadow-2xl bg-slate-950 flex-shrink-0">
             {difunto?.fotoPerfilUrl ? (
               <Image
@@ -126,7 +131,6 @@ export default function LiveWallPage({ params }: LiveWallProps) {
             )}
           </div>
 
-          {/* CÓDIGO QR GENERADO DINÁMICAMENTE */}
           <div className="bg-white p-3 rounded-2xl shadow-2xl border border-amber-500/20 my-2">
             <QRCodeSVG value={qrUrl} size={140} level="M" />
           </div>
@@ -174,9 +178,21 @@ export default function LiveWallPage({ params }: LiveWallProps) {
 
                   <div className="pt-6 border-t border-slate-800/80 flex items-center justify-between gap-2 mt-6">
                     <div>
-                      <h3 className="text-lg font-bold text-amber-400">
-                        {currentItem.nombreAutor}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-amber-400">
+                          {currentItem.nombreAutor}
+                        </h3>
+                        {/* 2. MOSTRAR LA BANDERA Y EL PAÍS AQUÍ */}
+                        {currentItem.pais && (
+                          <span 
+                            className="inline-flex items-center gap-1 text-xs bg-slate-800/80 border border-slate-700/50 px-2 py-0.5 rounded-full text-slate-300"
+                            title={`Enviado desde ${currentItem.pais}`}
+                          >
+                            <span>{obtenerBanderaPais(currentItem.pais)}</span>
+                            <span className="uppercase text-[10px] font-mono tracking-wider">{currentItem.pais}</span>
+                          </span>
+                        )}
+                      </div>
                       {currentItem.parentesco && (
                         <p className="text-xs text-slate-400 font-medium">
                           {currentItem.parentesco}

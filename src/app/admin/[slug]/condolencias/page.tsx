@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db/prisma';
 import TablaCondolencias from './TablaCondolencias';
 
 export default async function PaginaModeracion() {
