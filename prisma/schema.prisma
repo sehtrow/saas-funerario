@@ -37,7 +37,7 @@ model Funeraria {
   slug                  String        @unique
   tiempoRotacionTv      Int      @default(8)       // Segundos por mensaje en pantalla TV
   mensajeInstitucional  String?                    // Texto personalizado para el QR
-  moderacionPorDefecto  Boolean  @default(true)    // Moderación activa por defecto en nuevos servicios
+  requiereModeracion    Boolean  @default(true)    // Moderación activa por defecto en nuevos servicios
   logoUrl               String?
   colorPrimario         String        @default("#111827")
   activo                Boolean       @default(true)
