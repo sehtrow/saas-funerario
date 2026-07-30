@@ -24,7 +24,7 @@ export default async function PaginaDifunto({ params }: PageProps) {
       funeraria: true,
       condolencias: {
         where: { estado: 'APROBADO' },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { creadoEn: 'desc' },
       },
     },
   });
@@ -123,7 +123,7 @@ export default async function PaginaDifunto({ params }: PageProps) {
                   </div>
                   <p className="text-slate-600 text-sm leading-relaxed">{c.mensaje}</p>
                   <span className="text-xs text-slate-400 block pt-1">
-                    {new Date(c.createdAt).toLocaleDateString('es-CL')}
+                    {new Date(c.creadoEn).toLocaleDateString('es-CL')}
                   </span>
                 </div>
               ))}

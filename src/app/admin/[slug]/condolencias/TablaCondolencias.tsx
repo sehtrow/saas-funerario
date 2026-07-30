@@ -13,7 +13,7 @@ interface CondolenciaConDifunto {
   mensaje: string;
   relacion?: string | null;
   estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
-  createdAt: Date;
+  creadoEn: Date;
   difunto: {
     id: string;
     nombre: string;
@@ -147,7 +147,7 @@ export default function TablaCondolencias({
 
                   <div className="text-xs text-slate-400 flex items-center gap-3 pt-1">
                     <span>
-                      {new Date(c.createdAt).toLocaleDateString('es-CL', {
+                      {new Date(c.creadoEn).toLocaleDateString('es-CL', {
                         day: '2-digit',
                         month: 'short',
                         hour: '2-digit',
