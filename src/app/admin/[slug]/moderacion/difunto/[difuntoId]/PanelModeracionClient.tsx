@@ -75,7 +75,7 @@ export default function PanelModeracionClient({
 
     startTransition(async () => {
       const pathTv = `/tv/${difuntoInicial.funeraria.slug}/${difuntoInicial.id}`;
-      await cambiarEstadoCondolencia(id, nuevoEstado, pathTv);
+      await cambiarEstadoCondolencia(id, nuevoEstado, pathTv, difuntoInicial.id);
     });
   };
 

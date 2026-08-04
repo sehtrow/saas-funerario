@@ -20,6 +20,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
     select: {
       id: true,
       nombre: true,
+      requiereModeracion: true,
       difuntos: {
         where: {
           estado: { not: "ELIMINADO" },

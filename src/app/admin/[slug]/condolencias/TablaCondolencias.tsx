@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { EstadoCondolencia } from '@prisma/client';
 import {
   cambiarEstadoCondolencia,
   eliminarCondolencia,
