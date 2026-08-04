@@ -1,4 +1,3 @@
-// src/app/[slug]/difuntos/[difuntoId]/page.tsx
 import { prisma } from '@/lib/db/prisma';
 import { notFound } from 'next/navigation';
 import FormularioCondolencia from './FormularioCondolencia'; // O la ruta correcta a tu componente

@@ -186,20 +186,31 @@ export async function updateDifuntoAction({
 }
 
 // 4. Eliminar Difunto
-export async function deleteDifuntoAction(id: string, slug: string) {
+export async function eliminarDifunto(difuntoId: string) {
   try {
-    await prisma.difunto.delete({
-      where: { id },
-    });
+    // Usamos una transacción para asegurar que ambas operaciones ocurran o ninguna
+    await prisma.$transaction([
+      // 1. Cambiar el estado del difunto a ELIMINADO
+      prisma.difunto.update({
+        where: { id: difuntoId },
+        data: { estado: 'ELIMINADO' },
+      }),
 
-    revalidatePath(`/admin/${slug}`);
+      // 2. Actualizar las condolencias asociadas 
+      // (Si tienes un campo 'estado' en Condolencias, por ejemplo 'RECHAZADO', 'ELIMINADO' o un booleano 'activo: false')
+      prisma.condolencia.updateMany({
+        where: { difuntoId: difuntoId },
+        data: { 
+          // Ajusta esto según el campo que uses en tu modelo Condolencia:
+          estado: 'ELIMINADO', // o el estado que uses para ocultarlas
+        },
+      }),
+    ]);
+
     return { success: true };
-  } catch (error: any) {
-    console.error("Error al eliminar difunto:", error);
-    return {
-      success: false,
-      error: error.message || "No se pudo eliminar el registro del difunto.",
-    };
+  } catch (err: any) {
+    console.error('❌ ERROR AL ELIMINAR DIFUNTO Y CONDOLENCIAS:', err);
+    return { success: false, error: err.message || 'No se pudo completar la eliminación.' };
   }
 }
 

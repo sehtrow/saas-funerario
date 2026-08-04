@@ -1,3 +1,4 @@
+// src/app/actions/condolencias.ts
 'use server';
 
 import { prisma } from '@/lib/db/prisma';
@@ -6,59 +7,71 @@ import { revalidatePath } from 'next/cache';
 import { obtenerSesionServidor } from '@/lib/auth';
 import { headers } from 'next/headers';
 
-export interface CrearCondolenciaInput {
-  funerariaId: string;
-  difuntoId: string;
-  nombreAutor: string;
-  parentesco?: string;
-  mensaje: string;
-}
-
 // 1. Enviar una nueva condolencia (Público)
-export async function enviarCondolencia(data: CrearCondolenciaInput) {
+export async function enviarCondolencia(formData: FormData) {
   try {
-    if (!data.nombreAutor || !data.mensaje) {
+    const funerariaId = formData.get('funerariaId') as string;
+    const difuntoId = formData.get('difuntoId') as string;
+    const slug = formData.get('slug') as string; 
+    const nombreAutor = formData.get('nombreAutor') as string;
+    const parentesco = formData.get('parentesco') as string;
+    const mensaje = formData.get('mensaje') as string;
+    const fotoUrl = formData.get('fotoUrl') as string;
+
+    if (!nombreAutor || !mensaje || !funerariaId || !difuntoId) {
       return { success: false, error: 'Por favor completa los campos requeridos.' };
     }
 
-    // 2. Obtener el país desde las cabeceras que provee Vercel
+    // 2. Obtener el país desde las cabeceras de Vercel
     const headerList = await headers();
-    // Vercel inyecta el código de país (ej. "CL", "AR"). Si estás en local, vendrá vacío o null.
-    const codigoPais = headerList.get('x-vercel-ip-country') || 'CL'; 
+    const pais = headerList.get('x-vercel-ip-country') || 'CL'; 
 
-    // Opcional: Si quieres un nombre más legible o usar una librería de mapeo de códigos, 
-    // puedes guardarlo directamente o transformarlo.
-    const pais = codigoPais; 
+    // 3. Buscar tanto la funeraria como el difunto para verificar sus reglas de moderación
+    const [funeraria, difunto] = await Promise.all([
+      prisma.funeraria.findUnique({
+        where: { id: funerariaId },
+        select: { requiereModeracion: true, slug: true },
+      }),
+      prisma.difunto.findUnique({
+        where: { id: difuntoId },
+        select: { requiereModeracion: true },
+      }),
+    ]);
 
-    // Verificamos si la funeraria requiere moderación
-    const funeraria = await prisma.funeraria.findUnique({
-      where: { id: data.funerariaId },
-      select: { requiereModeracion: true },
-    });
+    // 4. Lógica combinada: 
+    // Si el difunto existe, usamos su regla (difunto.requiereModeracion). 
+    // Como respaldo por si el difunto no viniera, usamos el de la funeraria.
+    // (O si quieres que el difunto tenga la última palabra al editarlo individualmente):
+    const requiereMod = difunto?.requiereModeracion ?? funeraria?.requiereModeracion ?? true;
 
-    const estadoInicial = funeraria?.requiereModeracion 
+    const estadoInicial = requiereMod 
       ? EstadoCondolencia.PENDIENTE 
       : EstadoCondolencia.APROBADO;
 
-    // 3. Crear la condolencia guardando el país
+    // 5. Crear la condolencia con el estado correcto
     const nueva = await prisma.condolencia.create({
       data: {
-        funerariaId: data.funerariaId,
-        difuntoId: data.difuntoId,
-        nombreAutor: data.nombreAutor.trim(),
-        parentesco: data.parentesco ? data.parentesco.trim() : null,
-        mensaje: data.mensaje.trim(),
+        funerariaId,
+        difuntoId,
+        nombreAutor: nombreAutor.trim(),
+        parentesco: parentesco ? parentesco.trim() : null,
+        mensaje: mensaje.trim(),
         estado: estadoInicial,
-        pais: pais, // <-- Guardamos el país aquí
+        pais,
+        fotoUrl: fotoUrl || null,
       },
     });
 
-    revalidatePath(`/q/${data.difuntoId}`);
-    revalidatePath(`/live/${data.difuntoId}`);
+    // 6. Revalidar las rutas limpias
+    const targetSlug = slug || funeraria?.slug;
+    if (targetSlug) {
+      revalidatePath(`/${targetSlug}/difuntos/${difuntoId}`);
+      revalidatePath(`/${targetSlug}/tv/${difuntoId}`);
+    }
 
     return { success: true, data: nueva };
   } catch (err: any) {
-    console.error('❌ ERROR AL INSERTAR:', err);
+    console.error('❌ ERROR AL INSERTAR CONDOLENCIA:', err);
     return { success: false, error: err.message || 'Error interno.' };
   }
 }
@@ -66,7 +79,7 @@ export async function enviarCondolencia(data: CrearCondolenciaInput) {
 // 2. Cambiar el estado de una condolencia (Aprobado / Rechazado) - Requiere Admin
 export async function cambiarEstadoCondolencia(
   condolenciaId: string,
-  nuevoEstado: 'APROBADO' | 'RECHAZADO',
+  nuevoEstado: EstadoCondolencia,
   slug: string,
   difuntoId: string
 ) {
@@ -78,12 +91,12 @@ export async function cambiarEstadoCondolencia(
 
     await prisma.condolencia.update({
       where: { id: condolenciaId },
-      data: { estado: nuevoEstado as EstadoCondolencia },
+      data: { estado: nuevoEstado },
     });
 
-    // Actualizamos las vistas de administración y pantalla en vivo
-    revalidatePath(`/admin/${slug}/moderacion/difunto/${difuntoId}`);
-    revalidatePath(`/live/${difuntoId}`);
+    // Actualizamos las rutas del panel de moderación y pantalla en vivo
+    revalidatePath(`/admin/moderacion/${slug}/${difuntoId}`);
+    revalidatePath(`/${slug}/tv/${difuntoId}`);
 
     return { success: true };
   } catch (error) {
@@ -108,8 +121,8 @@ export async function eliminarCondolencia(
       where: { id: condolenciaId },
     });
 
-    revalidatePath(`/admin/${slug}/moderacion/difunto/${difuntoId}`);
-    revalidatePath(`/live/${difuntoId}`);
+    revalidatePath(`/admin/moderacion/${slug}/${difuntoId}`);
+    revalidatePath(`/${slug}/tv/${difuntoId}`);
 
     return { success: true };
   } catch (error) {
@@ -136,5 +149,41 @@ export async function cambiarConfiguracionModeracion(funerariaId: string, requie
   } catch (error) {
     console.error('Error al cambiar configuración de moderación:', error);
     return { success: false, error: 'Error al actualizar la configuración.' };
+  }
+}
+
+// 5. Obtener condolencias para el panel de moderación
+export async function obtenerCondolenciasParaModeracion(
+  slugFuneraria: string,
+  difuntoId: string
+) {
+  try {
+    const difunto = await prisma.difunto.findFirst({
+      where: {
+        id: difuntoId,
+        funeraria: { slug: slugFuneraria },
+      },
+      select: {
+        id: true,
+        nombre: true,
+        apellido: true,
+        fotoPerfilUrl: true,
+        funeraria: {
+          select: {
+            id: true,
+            nombre: true,
+            slug: true,
+          },
+        },
+        condolencias: {
+          orderBy: { creadoEn: 'desc' },
+        },
+      },
+    });
+
+    return difunto;
+  } catch (error) {
+    console.error('Error al obtener datos para moderación:', error);
+    return null;
   }
 }

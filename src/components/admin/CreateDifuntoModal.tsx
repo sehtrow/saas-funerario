@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   X,
@@ -11,13 +11,14 @@ import {
 import {
   getPresignedUrlAction,
   createDifuntoAction,
-} from "@/app/admin/[slug]/actions";
+} from "@/app/actions/admin";
 
 interface CreateDifuntoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
   slug: string;
+  requiereModeracionDefault: boolean;
 }
 
 export default function CreateDifuntoModal({
@@ -25,6 +26,7 @@ export default function CreateDifuntoModal({
   onClose,
   onSuccess,
   slug,
+  requiereModeracionDefault,
 }: CreateDifuntoModalProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -38,8 +40,18 @@ export default function CreateDifuntoModal({
     fechaNacimiento: "",
     fechaFallecimiento: "",
     biografia: "",
-    requiereModeracion: true, // Habilitado por defecto para seguridad
+    requiereModeracion: true,
   });
+
+  // Cada vez que el modal se abre, inicializamos el checkbox con el valor por defecto de la funeraria
+  useEffect(() => {
+    if (isOpen) {
+      setFormData((prev) => ({
+        ...prev,
+        requiereModeracion: requiereModeracionDefault,
+      }));
+    }
+  }, [isOpen, requiereModeracionDefault]);
 
   if (!isOpen) return null;
 
@@ -100,14 +112,14 @@ export default function CreateDifuntoModal({
         throw new Error(res.error || "Error al crear el registro.");
       }
 
-      // Reset del formulario
+      // Reset del formulario (respetando el valor por defecto de la funeraria)
       setFormData({
         nombre: "",
         apellido: "",
         fechaNacimiento: "",
         fechaFallecimiento: "",
         biografia: "",
-        requiereModeracion: true,
+        requiereModeracion: requiereModeracionDefault,
       });
       setImageFile(null);
       setImagePreview(null);
@@ -202,7 +214,7 @@ export default function CreateDifuntoModal({
                 type="text"
                 required
                 placeholder="Ej. Pedro"
-                value={formData.nombre}
+                value={formData.nombre || ""}
                 onChange={(e) =>
                   setFormData({ ...formData, nombre: e.target.value })
                 }
@@ -217,7 +229,7 @@ export default function CreateDifuntoModal({
                 type="text"
                 required
                 placeholder="Ej. Fernandez"
-                value={formData.apellido}
+                value={formData.apellido || ""}
                 onChange={(e) =>
                   setFormData({ ...formData, apellido: e.target.value })
                 }
@@ -234,7 +246,7 @@ export default function CreateDifuntoModal({
               </label>
               <input
                 type="date"
-                value={formData.fechaNacimiento}
+                value={formData.fechaNacimiento || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
@@ -251,7 +263,7 @@ export default function CreateDifuntoModal({
               <input
                 type="date"
                 required
-                value={formData.fechaFallecimiento}
+                value={formData.fechaFallecimiento || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
@@ -271,7 +283,7 @@ export default function CreateDifuntoModal({
             <textarea
               rows={3}
               placeholder="Escribe una breve reseña de su vida..."
-              value={formData.biografia}
+              value={formData.biografia || ""}
               onChange={(e) =>
                 setFormData({ ...formData, biografia: e.target.value })
               }

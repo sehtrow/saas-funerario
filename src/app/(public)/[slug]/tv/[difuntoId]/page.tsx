@@ -17,7 +17,8 @@ export default async function PaginaTv({
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const urlPublicaCondolencias = `${baseUrl}/condolencias/${slug}/${difunto.id}`;
+  //const urlPublicaCondolencias = `${baseUrl}/condolencias/${slug}/${difunto.id}`;
+  const urlPublicaCondolencias = `${baseUrl}/${slug}/difuntos/${difunto.id}`;
 
   return (
     <PantallaTvClient

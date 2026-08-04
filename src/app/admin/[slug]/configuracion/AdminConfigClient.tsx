@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Lock, Sliders, Building, MessageSquare, Clock, ShieldCheck, Loader2, ArrowLeft, Image as ImageIcon, Upload, Trash2, CheckCheck } from "lucide-react";
 import Link from "next/link";
-import { actualizarConfiguracionAction } from "./actions";
+import { actualizarConfiguracionAction } from "@/app/actions/configuracion";
 
 interface FunerariaConfig {
   nombre: string;

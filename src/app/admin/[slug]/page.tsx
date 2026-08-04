@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
-import AdminDashboardClient from "./AdminDashboardClient";
+import AdminDashboardClient from "./AdminDashboardCliente";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -21,6 +21,9 @@ export default async function AdminDashboardPage({ params }: PageProps) {
       id: true,
       nombre: true,
       difuntos: {
+        where: {
+          estado: { not: "ELIMINADO" },
+        },
         select: {
           id: true,
           nombre: true,
@@ -29,6 +32,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
           fechaNacimiento: true, // 👈 Importante para el subtítulo de la lista
           fechaFallecimiento: true,
           estado: true,
+          biografia: true,
           requiereModeracion: true,
           creadoEn: true,
           _count: {
@@ -66,6 +70,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
     id: d.id,
     nombre: d.nombre,
     apellido: d.apellido,
+    biografia: d.biografia,
     fotoUrl: d.fotoPerfilUrl, // 👈 ¡CLAVE 2: Mapear fotoPerfilUrl a la propiedad fotoUrl!
     fechaNacimiento: d.fechaNacimiento
       ? new Date(d.fechaNacimiento).toISOString().split("T")[0]
@@ -97,6 +102,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
           slug={slug}
           difuntosIniciales={difuntosIniciales}
           totalDifuntosSemana={totalDifuntosSemana}
+          requiereModeracionFuneraria={funeraria.requiereModeracion}
         />
       </div>
     </div>

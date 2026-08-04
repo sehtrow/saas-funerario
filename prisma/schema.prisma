@@ -17,12 +17,14 @@ enum EstadoDifunto {
   ACTIVO
   CONSOLIDADO
   ARCHIVADO
+  ELIMINADO
 }
 
 enum EstadoCondolencia {
   PENDIENTE
   APROBADO
   RECHAZADO
+  ELIMINADO
 }
 
 enum TiempoRotacion {

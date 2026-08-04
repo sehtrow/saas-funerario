@@ -6,7 +6,7 @@ import { X, Upload, Loader2, User } from "lucide-react";
 import {
   updateDifuntoAction,
   getPresignedUrlAction,
-} from "@/app/admin/[slug]/actions"; // Ajusta el path según tus Server Actions
+} from "@/app/actions/admin";
 
 export interface DifuntoEditarData {
   id: string;

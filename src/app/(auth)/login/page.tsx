@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Lock, Mail, Loader2 } from "lucide-react";
-import { loginAction } from "./actions"; // <--- Importamos la Server Action real
+import { loginAction } from "@/app/actions/login"; // <--- Importamos la Server Action real
 
 export default function LoginPage() {
   const router = useRouter();

@@ -12,6 +12,8 @@ import {
   Tv,
   QrCode,
   Download,
+  MessageCircle,
+  Trash2,
 } from "lucide-react";
 import { ModalEditarDifunto } from "@/components/admin/ModalEditarDifunto"; 
 
@@ -23,8 +25,8 @@ export interface DifuntoAdmin {
   fechaFallecimiento: string;
   biografia?: string | null;
   fotoPerfilUrl?: string | null;
-  fotoUrl?: string | null; // Súplice por compatibilidad
-  estado: "ACTIVO" | "CONSOLIDADO" | "ARCHIVADO";
+  fotoUrl?: string | null;
+  estado: "ACTIVO" | "CONSOLIDADO" | "ARCHIVADO" | "ELIMINADO";
   totalCondolencias: number;
   requiereModeracion: boolean;
   creadoEn?: string | Date;
@@ -34,7 +36,8 @@ interface DifuntosListProps {
   difuntos: DifuntoAdmin[];
   slug: string;
   getFotoUrl: (path?: string | null) => string | null;
-  onSuccess?: () => void; // Para refrescar la página o datos si lo deseas
+  onSuccess?: () => void;
+  onDeleteAction?: (id: string) => Promise<{ success: boolean; error?: string }>; // Acción para eliminar
 }
 
 export const DifuntosList = ({
@@ -42,14 +45,53 @@ export const DifuntosList = ({
   slug,
   getFotoUrl,
   onSuccess,
+  onDeleteAction,
 }: DifuntosListProps) => {
-  // Estados para controlar el modal de edición internamente
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedDifunto, setSelectedDifunto] = useState<DifuntoAdmin | null>(null);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
   const handleOpenEdit = (difunto: DifuntoAdmin) => {
     setSelectedDifunto(difunto);
     setIsEditModalOpen(true);
+  };
+
+  // Función segura para manejar el clic de WhatsApp en el cliente
+  const handleWhatsAppShare = (difunto: DifuntoAdmin) => {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const urlDestino = `${baseUrl}/${slug}/difuntos/${difunto.id}`;
+    const texto = `Hola, les comparto el enlace para ver la información y dejar condolencias para ${difunto.nombre} ${difunto.apellido}: ${urlDestino}`;
+    
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank");
+  };
+
+  // Función para manejar la eliminación lógica con confirmación
+  const handleDelete = async (difunto: DifuntoAdmin) => {
+    const confirmado = window.confirm(
+      `¿Estás seguro de que deseas eliminar el registro de ${difunto.nombre} ${difunto.apellido}? Dejará de estar visible.`
+    );
+
+    if (!confirmado) return;
+
+    try {
+      setIsDeletingId(difunto.id);
+      
+      if (onDeleteAction) {
+        const res = await onDeleteAction(difunto.id);
+        if (!res.success) {
+          alert(res.error || "No se pudo eliminar el registro.");
+          return;
+        }
+      }
+
+      if (onSuccess) onSuccess();
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      alert("Ocurrió un error inesperado.");
+    } finally {
+      setIsDeletingId(null);
+    }
   };
 
   if (!difuntos || difuntos.length === 0) {
@@ -64,7 +106,6 @@ export const DifuntosList = ({
     <>
       <div className="grid grid-cols-1 gap-4">
         {difuntos.map((difunto) => {
-          // Resolver URL de la foto usando tu helper
           const fotoResuelta = getFotoUrl(
             difunto.fotoPerfilUrl || difunto.fotoUrl
           );
@@ -154,7 +195,7 @@ export const DifuntosList = ({
                 </button>
 
                 <Link
-                  href={`/tv/${slug}/${difunto.id}`}
+                  href={`/${slug}/tv/${difunto.id}`}
                   target="_blank"
                   className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl transition-colors border border-slate-700/60"
                 >
@@ -163,13 +204,23 @@ export const DifuntosList = ({
                 </Link>
 
                 <Link
-                  href={`/q/${difunto.id}`}
+                  href={`/${slug}/difuntos/${difunto.id}`}
                   target="_blank"
                   className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl transition-colors border border-slate-700/60"
                 >
                   <QrCode className="w-3.5 h-3.5 text-amber-400" />
                   Link QR
                 </Link>
+
+                {/* Botón Compartir por WhatsApp seguro */}
+                <button
+                  type="button"
+                  onClick={() => handleWhatsAppShare(difunto)}
+                  className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  WhatsApp
+                </button>
 
                 <a
                   href={`/api/difuntos/${difunto.id}/pdf`}
@@ -180,6 +231,17 @@ export const DifuntosList = ({
                   <Download className="w-3.5 h-3.5" />
                   Descargar PDF
                 </a>
+
+                {/* Botón de Eliminar Lógico */}
+                <button
+                  type="button"
+                  disabled={isDeletingId === difunto.id}
+                  onClick={() => handleDelete(difunto)}
+                  className="flex-1 md:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-xs font-semibold rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {isDeletingId === difunto.id ? "Eliminando..." : "Eliminar"}
+                </button>
               </div>
             </div>
           );
@@ -209,7 +271,6 @@ export const DifuntosList = ({
         }
         onSuccess={() => {
           if (onSuccess) onSuccess();
-          // Opcional: Recargar la página actual para reflejar cambios en servidor
           window.location.reload();
         }}
       />

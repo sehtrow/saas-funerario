@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { LogOut, Loader2 } from "lucide-react";
-import { logoutAction } from "@/app/admin/[slug]/logout-action"; // Ajusta la ruta si la guardaste en otro lugar
+import { logoutAction } from "@/app/actions/logout-action";
 
 interface LogoutButtonProps {
   slug: string;

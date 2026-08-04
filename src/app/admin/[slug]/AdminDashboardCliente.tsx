@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { DifuntosList } from "@/components/admin/DifuntosList";
+import { eliminarDifunto } from "@/app/actions/admin";
 import  CreateDifuntoModal  from "@/components/admin/CreateDifuntoModal";
 import {
   Users,
@@ -30,6 +31,7 @@ interface AdminDashboardClientProps {
   slug: string;
   difuntosIniciales: DifuntoAdmin[];
   totalDifuntosSemana: number;
+  requiereModeracionFuneraria: boolean;
 }
 
 // Auxiliar para resolver la URL pública de imágenes alojadas en R2 o locales
@@ -48,6 +50,7 @@ export default function AdminDashboardClient({
   slug,
   difuntosIniciales,
   totalDifuntosSemana,
+  requiereModeracionFuneraria,
 }: AdminDashboardClientProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
@@ -134,6 +137,10 @@ export default function AdminDashboardClient({
             difuntos={filteredDifuntos}
             slug={slug}
             getFotoUrl={getFotoUrl}
+            onDeleteAction={async (id) => {
+              const res = await eliminarDifunto(id);
+              return res; 
+            }}
           />
         </section>
       </main>
@@ -146,6 +153,7 @@ export default function AdminDashboardClient({
         onSuccess={() => {
           router.refresh();
         }}
+        requiereModeracionDefault={requiereModeracionFuneraria}
       />
     </>
   );

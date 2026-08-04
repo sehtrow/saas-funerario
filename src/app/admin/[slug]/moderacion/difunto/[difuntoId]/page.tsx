@@ -1,5 +1,5 @@
 // src/app/admin/[slug]/moderacion/difunto/[difuntoId]/page.tsx
-import { obtenerCondolenciasParaModeracion } from '@/app/actions/moderacion';
+import { obtenerCondolenciasParaModeracion } from '@/app/actions/condolencias';
 import { notFound } from 'next/navigation';
 import PanelModeracionClient from './PanelModeracionClient';
 
