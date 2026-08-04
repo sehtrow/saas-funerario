@@ -1,11 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // 1. Permitir peticiones dev/HMR desde la IP de tu celular/red local
+  // 1. Permitir peticiones dev/HMR desde la IP local y Vercel
   allowedDevOrigins: [
     '192.168.100.3',
     '192.168.100.3:3000',
     'localhost:3000',
+    'saas-funerario.vercel.app',
   ],
 
   images: {
@@ -28,6 +29,10 @@ const nextConfig: NextConfig = {
         '192.168.100.3',
         'localhost:3000',
         'localhost',
+        // 👇 ¡CLAVE: Agrega tu dominio de producción aquí!
+        'saas-funerario.vercel.app',
+        // Opcional: Para permitir ramas de preview automáticas de Vercel
+        '*.vercel.app', 
       ],
     },
   },
