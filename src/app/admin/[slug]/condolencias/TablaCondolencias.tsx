@@ -12,7 +12,7 @@ interface CondolenciaConDifunto {
   nombreAutor: string;
   mensaje: string;
   parentesco?: string | null;
-  estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+  estado: EstadoCondolencia;
   creadoEn: Date;
   difunto: {
     id: string;
