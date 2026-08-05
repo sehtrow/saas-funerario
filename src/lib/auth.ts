@@ -1,5 +1,6 @@
-import { cookies } from 'next/headers';
-import { prisma } from '@/lib/db/prisma';
+import { cookies } from "next/headers";
+import { verifyToken } from "./jwt";
+import { prisma } from "./db/prisma";
 
 export async function obtenerSesionServidor() {
   try {
@@ -41,6 +42,39 @@ export async function obtenerSesionServidor() {
     };
   } catch (error) {
     console.error('Error al obtener la sesión del servidor:', error);
+    return null;
+  }
+}
+
+export async function getCurrentUser() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("session_token")?.value;
+
+    if (!token) return null;
+
+    // Verificar el JWT
+    const payload = await verifyToken(token);
+    if (!payload) return null;
+
+    // Opcional pero recomendado: Consultar la BD para asegurar que el usuario sigue activo y con datos frescos
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: payload.userId },
+      select: {
+        id: true,
+        email: true,
+        nombre: true,
+        rol: true,
+        funerariaId: true,
+        debeCambiarPassword: true,
+        activo: true,
+      },
+    });
+
+    if (!usuario || !usuario.activo) return null;
+
+    return usuario;
+  } catch (error) {
     return null;
   }
 }

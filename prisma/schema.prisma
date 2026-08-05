@@ -45,23 +45,41 @@ model Funeraria {
   activo                Boolean       @default(true)
   creadoEn              DateTime      @default(now())
   actualizadoEn         DateTime      @updatedAt
+  plan                  String          @default("ESTANDAR") // BASIC, ESTANDAR, ENTERPRISE
+  limiteServiciosMes    Int             @default(50)         // Control de volumen mensual
 
-  usuarios        Usuario[]
-  difuntos        Difunto[]
-
+  usuarios              Usuario[]
+  difuntos              Difunto[]
+  pagos                 PagoFuneraria[]
   @@map("funerarias")
 }
 
+model PagoFuneraria {
+  id            String   @id @default(cuid())
+  funerariaId   String
+  monto         Float
+  metodo        String   // Ej: "Transferencia", "Tarjeta", "Efectivo"
+  referencia    String?  // Nro de comprobante o transacción
+  estado        String   @default("completado") // completado, pendiente
+  observacion   String?
+  creadoEn      DateTime @default(now())
+
+  funeraria     Funeraria @relation(fields: [funerariaId], references: [id], onDelete: Cascade)
+}
+
 model Usuario {
-  id              String        @id @default(uuid())
-  funerariaId     String?       
-  email           String        @unique
-  passwordHash    String
-  nombre          String
-  rol             RolUsuario    @default(ADMIN_FUNERARIA)
-  activo          Boolean       @default(true)
-  creadoEn        DateTime      @default(now())
-  actualizadoEn   DateTime      @updatedAt
+  id                      String        @id @default(uuid())
+  funerariaId             String?       
+  email                   String        @unique
+  passwordHash            String
+  nombre                  String
+  rol                     RolUsuario    @default(ADMIN_FUNERARIA)
+  activo                  Boolean       @default(true)
+  creadoEn                DateTime      @default(now())
+  actualizadoEn           DateTime      @updatedAt
+  debeCambiarPassword     Boolean       @default(false)
+  tokenRecuperacion       String?       @unique
+  expiraTokenRecuperacion DateTime?
 
   funeraria       Funeraria?    @relation(fields: [funerariaId], references: [id], onDelete: Cascade)
 

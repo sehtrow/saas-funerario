@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Lock, Mail, Loader2 } from "lucide-react";
-import { loginAction } from "@/app/actions/login"; // <--- Importamos la Server Action real
+import { loginAction } from "@/app/actions/login";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,14 +18,14 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
 
-    // Llamada a la Server Action de autenticación con Prisma y bcrypt
+    // Llamada a la Server Action de autenticación con JWT y soporte multirrol
     const res = await loginAction({ email, password });
 
     setIsLoading(false);
 
-    if (res.success && res.slug) {
-      // Redirección dinámica basada en el slug real de la funeraria del usuario
-      router.push(`/admin/${res.slug}`);
+    if (res.success && res.redirectTo) {
+      // Redirección dinámica basada en la ruta devuelta por el servidor (Superadmin o Funeraria)
+      router.push(res.redirectTo);
       router.refresh();
     } else {
       setError(res.error || "Ocurrió un error al iniciar sesión.");
@@ -50,7 +50,7 @@ export default function LoginPage() {
           </div>
           <h2 className="text-2xl font-bold text-white tracking-tight">Acceso Administrativo</h2>
           <p className="text-slate-400 text-sm">
-            Ingresa con las credenciales asignadas a tu funeraria
+            Ingresa con las credenciales asignadas a tu cuenta
           </p>
         </div>
 
@@ -72,7 +72,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@ejemplo.com"
+                placeholder="admin@memoriadigital.cl"
                 className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 rounded-lg pl-11 pr-4 py-3 text-slate-200 text-sm placeholder:text-slate-600 outline-none transition-all"
               />
             </div>

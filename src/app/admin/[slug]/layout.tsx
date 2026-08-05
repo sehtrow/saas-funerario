@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import LogoutButton from "@/components/admin/LogoutButton";
 import Link from "next/link";
 import { LayoutDashboard, Users, Settings, Building2 } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth"; // Asegúrate de ajustar esta importación según cómo obtienes la sesión en tu app
+import ModalCambioPassword from "@/components/ModalCambioPassword"; // Ajusta la ruta a tu modal
 
 export default async function AdminFunerariaLayout({
   children,
@@ -18,10 +20,14 @@ export default async function AdminFunerariaLayout({
     notFound();
   }
 
-  const funeraria = await prisma.funeraria.findUnique({
-    where: { slug },
-    select: { id: true, nombre: true, logoUrl: true, slug: true },
-  });
+  // 1. Obtener la funeraria y el usuario actual en paralelo para mayor eficiencia
+  const [funeraria, usuario] = await Promise.all([
+    prisma.funeraria.findUnique({
+      where: { slug },
+      select: { id: true, nombre: true, logoUrl: true, slug: true },
+    }),
+    getCurrentUser(), // Función que retorna el usuario autenticado (debe incluir id y debeCambiarPassword)
+  ]);
 
   if (!funeraria) {
     notFound();
@@ -29,7 +35,7 @@ export default async function AdminFunerariaLayout({
 
   return (
     // CAMBIO CLAVE 1: 'h-screen' y 'overflow-hidden' para congelar el viewport
-    <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row font-sans overflow-hidden">
+    <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row font-sans overflow-hidden relative">
       
       {/* BARRA LATERAL / NAVEGACIÓN */}
       {/* CAMBIO CLAVE 2: 'h-full' y 'shrink-0' para que no empuje ni se deforme */}
@@ -94,6 +100,14 @@ export default async function AdminFunerariaLayout({
       <main className="flex-1 h-full p-6 overflow-y-auto">
         {children}
       </main>
+
+      {/* MODAL BLOQUEANTE DE CAMBIO DE CONTRASEÑA */}
+      {usuario && (
+        <ModalCambioPassword
+          userId={usuario.id}
+          isOpen={usuario.debeCambiarPassword}
+        />
+      )}
     </div>
   );
 }
