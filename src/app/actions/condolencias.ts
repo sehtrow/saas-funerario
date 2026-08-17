@@ -34,24 +34,26 @@ export async function enviarCondolencia(formData: FormData) {
       }),
       prisma.difunto.findUnique({
         where: { id: difuntoId },
-        select: { requiereModeracion: true },
+        select: { requiereModeracion: true, sucursalId: true }, // <-- Aseguramos capturar el sucursalId del difunto
       }),
     ]);
 
-    // 4. Lógica combinada: 
-    // Si el difunto existe, usamos su regla (difunto.requiereModeracion). 
-    // Como respaldo por si el difunto no viniera, usamos el de la funeraria.
-    // (O si quieres que el difunto tenga la última palabra al editarlo individualmente):
+    if (!difunto) {
+      return { success: false, error: 'El difunto especificado no existe.' };
+    }
+
+    // 4. Lógica combinada de moderación
     const requiereMod = difunto?.requiereModeracion ?? funeraria?.requiereModeracion ?? true;
 
     const estadoInicial = requiereMod 
       ? EstadoCondolencia.PENDIENTE 
       : EstadoCondolencia.APROBADO;
 
-    // 5. Crear la condolencia con el estado correcto
+    // 5. Crear la condolencia con el estado correcto y asegurando el sucursalId heredado del difunto
     const nueva = await prisma.condolencia.create({
       data: {
         funerariaId,
+        sucursalId: difunto.sucursalId, // <-- NUEVO: Obligatorio en el nuevo esquema para aislar por sucursal
         difuntoId,
         nombreAutor: nombreAutor.trim(),
         parentesco: parentesco ? parentesco.trim() : null,
@@ -168,6 +170,7 @@ export async function obtenerCondolenciasParaModeracion(
         nombre: true,
         apellido: true,
         fotoPerfilUrl: true,
+        sucursalId: true, // <-- NUEVO: Útil si requieres mostrar datos de la sucursal en el panel
         funeraria: {
           select: {
             id: true,

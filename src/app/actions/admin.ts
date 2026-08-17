@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { r2Client } from "@/lib/r2";
-import { PutObjectCommand,DeleteObjectCommand  } from "@aws-sdk/client-s3";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { revalidatePath } from "next/cache";
 
@@ -47,7 +47,7 @@ export async function getPresignedUrlAction(fileName: string, fileType: string, 
   }
 }
 
-// 2. Crear Difunto en PostgreSQL
+// 2. Crear Difunto en PostgreSQL (Adaptado para recibir sucursalId)
 export async function createDifuntoAction({
   nombre,
   apellido,
@@ -57,6 +57,7 @@ export async function createDifuntoAction({
   fotoUrl,
   requiereModeracion,
   slug,
+  sucursalId, // <-- NUEVO: Recibimos la sucursal seleccionada
 }: {
   nombre: string;
   apellido: string;
@@ -66,8 +67,10 @@ export async function createDifuntoAction({
   fotoUrl?: string;
   requiereModeracion?: boolean;
   slug: string;
+  sucursalId: string; // <-- Obligatorio en el nuevo esquema
 }) {
   try {
+    // Verificamos que la funeraria exista a través del slug
     const funeraria = await prisma.funeraria.findUnique({
       where: { slug },
       select: { id: true },
@@ -77,15 +80,25 @@ export async function createDifuntoAction({
       return { success: false, error: "Funeraria no encontrada." };
     }
 
+    // Verificamos que la sucursal pertenezca realmente a esta funeraria (Seguridad multi-tenant)
+    const sucursal = await prisma.sucursal.findFirst({
+      where: { id: sucursalId, funerariaId: funeraria.id },
+    });
+
+    if (!sucursal) {
+      return { success: false, error: "La sucursal seleccionada no es válida para esta funeraria." };
+    }
+
     const difunto = await prisma.difunto.create({
       data: {
         funerariaId: funeraria.id,
+        sucursalId: sucursal.id, // <-- NUEVO: Vinculado a la tabla Sucursal
         nombre,
         apellido,
         biografia: biografia || null,
         fechaNacimiento: parseLocalDate(fechaNacimiento),
         fechaFallecimiento: parseLocalDate(fechaFallecimiento) || new Date(),
-        fotoPerfilUrl: fotoUrl || null, // FIX: Mapeado a fotoPerfilUrl según schema.prisma
+        fotoPerfilUrl: fotoUrl || null,
         requiereModeracion: requiereModeracion ?? true,
       },
     });
@@ -112,6 +125,7 @@ export async function updateDifuntoAction({
   fechaFallecimiento,
   fotoUrl,
   requiereModeracion,
+  sucursalId, // <-- NUEVO: Permitir cambiar de sucursal si el Admin General lo requiere
 }: {
   id: string;
   slug: string;
@@ -122,13 +136,18 @@ export async function updateDifuntoAction({
   fechaFallecimiento: string;
   fotoUrl?: string;
   requiereModeracion: boolean;
+  sucursalId?: string; // <-- Opcional en update
 }) {
   try {
-    // 1. Buscamos el registro actual del difunto para verificar si ya tenía una foto previa
+    // 1. Buscamos el registro actual del difunto
     const difuntoActual = await prisma.difunto.findUnique({
       where: { id },
-      select: { fotoPerfilUrl: true },
+      select: { fotoPerfilUrl: true, funerariaId: true },
     });
+
+    if (!difuntoActual) {
+      return { success: false, error: "Difunto no encontrado." };
+    }
 
     const dataToUpdate: any = {
       nombre,
@@ -139,22 +158,28 @@ export async function updateDifuntoAction({
       requiereModeracion,
     };
 
+    // Si se pasa un nuevo sucursalId, validamos que pertenezca a la misma funeraria
+    if (sucursalId) {
+      const sucursalValida = await prisma.sucursal.findFirst({
+        where: { id: sucursalId, funerariaId: difuntoActual.funerariaId },
+      });
+      if (sucursalValida) {
+        dataToUpdate.sucursalId = sucursalId;
+      }
+    }
+
     // 2. Si se está enviando una nueva foto URL
     if (fotoUrl) {
       dataToUpdate.fotoPerfilUrl = fotoUrl;
 
-      // Si el difunto tenía una foto anterior y es DIFERENTE a la nueva que se subió
+      // Si el difunto tenía una foto anterior y es DIFERENTE a la nueva
       if (difuntoActual?.fotoPerfilUrl && difuntoActual.fotoPerfilUrl !== fotoUrl) {
         try {
-          // Extraemos la Key de R2 a partir de la URL pública almacenada
-          // Ejemplo de URL: https://tu-bucket.r2.dev/difuntos/slug/archivo.png
-          // La Key que necesita S3/R2 es: difuntos/slug/archivo.png
           const baseUrl = (process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "").replace(/\/$/, "");
           
           if (difuntoActual.fotoPerfilUrl.startsWith(baseUrl)) {
             const oldKey = difuntoActual.fotoPerfilUrl.replace(`${baseUrl}/`, "");
 
-            // Ejecutamos el comando de borrado en Cloudflare R2
             await r2Client.send(
               new DeleteObjectCommand({
                 Bucket: process.env.R2_BUCKET_NAME,
@@ -163,7 +188,6 @@ export async function updateDifuntoAction({
             );
           }
         } catch (r2Error) {
-          // Si falla el borrado de la imagen vieja por alguna razón, no detenemos la actualización del difunto, solo lo registramos
           console.error("No se pudo eliminar la imagen anterior de R2:", r2Error);
         }
       }
@@ -188,7 +212,6 @@ export async function updateDifuntoAction({
 // 4. Eliminar Difunto
 export async function eliminarDifunto(difuntoId: string) {
   try {
-    // Usamos una transacción para asegurar que ambas operaciones ocurran o ninguna
     await prisma.$transaction([
       // 1. Cambiar el estado del difunto a ELIMINADO
       prisma.difunto.update({
@@ -196,13 +219,11 @@ export async function eliminarDifunto(difuntoId: string) {
         data: { estado: 'ELIMINADO' },
       }),
 
-      // 2. Actualizar las condolencias asociadas 
-      // (Si tienes un campo 'estado' en Condolencias, por ejemplo 'RECHAZADO', 'ELIMINADO' o un booleano 'activo: false')
+      // 2. Actualizar las condolencias asociadas
       prisma.condolencia.updateMany({
         where: { difuntoId: difuntoId },
         data: { 
-          // Ajusta esto según el campo que uses en tu modelo Condolencia:
-          estado: 'ELIMINADO', // o el estado que uses para ocultarlas
+          estado: 'ELIMINADO',
         },
       }),
     ]);

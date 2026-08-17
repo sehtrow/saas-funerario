@@ -9,8 +9,9 @@ generator client {
 }
 
 enum RolUsuario {
-  SUPERADMIN
-  ADMIN_FUNERARIA
+  SUPERADMIN          // Nosotros (SaaS)
+  ADMIN_GENERAL       // Dueño de la Funeraria (ve todas las sucursales)
+  ADMIN_SUCURSAL      // Administrador exclusivo de una sucursal en particular
 }
 
 enum EstadoDifunto {
@@ -33,6 +34,23 @@ enum TiempoRotacion {
   QUINCE_SEG    @map("15s")
 }
 
+model Sucursal {
+  id           String     @id @default(uuid())
+  nombre       String     // Ej. "Sucursal Maipú", "Casa Central Los Ángeles"
+  direccion    String?
+  comuna       String?    // Ej. "Maipú"
+  
+  funerariaId  String
+  funeraria    Funeraria  @relation(fields: [funerariaId], references: [id], onDelete: Cascade)
+
+  // Relaciones de la sucursal
+  usuarios     Usuario[]  // Operadores u administradores asignados a esta sucursal
+  difuntos     Difunto[]  // Difuntos velados en esta sucursal específica
+
+  creadoEn          DateTime   @default(now())
+  actualizadoEn     DateTime   @updatedAt
+}
+
 model Funeraria {
   id                    String        @id @default(uuid())
   nombre                String
@@ -49,7 +67,7 @@ model Funeraria {
   limiteServiciosMes    Int             @default(50)         // Control de volumen mensual
 
   usuarios              Usuario[]
-  difuntos              Difunto[]
+  sucursales            Sucursal[]
   pagos                 PagoFuneraria[]
   @@map("funerarias")
 }
@@ -68,8 +86,7 @@ model PagoFuneraria {
 }
 
 model Usuario {
-  id                      String        @id @default(uuid())
-  funerariaId             String?       
+  id                      String        @id @default(uuid())    
   email                   String        @unique
   passwordHash            String
   nombre                  String
@@ -81,7 +98,12 @@ model Usuario {
   tokenRecuperacion       String?       @unique
   expiraTokenRecuperacion DateTime?
 
-  funeraria       Funeraria?    @relation(fields: [funerariaId], references: [id], onDelete: Cascade)
+  funerariaId        String
+  funeraria          Funeraria    @relation(fields: [funerariaId], references: [id], onDelete: Cascade)
+  // NUEVO: Opcional si es ADMIN_GENERAL (null), obligatorio si es ADMIN_SUCURSAL
+  sucursalId         String?
+  sucursal           Sucursal?    @relation(fields: [sucursalId], references: [id], onDelete: SetNull)
+
 
   @@index([funerariaId])
   @@map("usuarios")
@@ -102,7 +124,8 @@ model Difunto {
   creadoEn           DateTime       @default(now())
   updatedAt          DateTime       @updatedAt @default(now())
 
-  funeraria          Funeraria      @relation(fields: [funerariaId], references: [id], onDelete: Cascade)
+  sucursalId         String
+  sucursal           Sucursal     @relation(fields: [sucursalId], references: [id], onDelete: Cascade)
   condolencias       Condolencia[]
   configPantalla     ConfiguracionPantalla?
 
